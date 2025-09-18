@@ -16,3 +16,4 @@ pub use grab::grab;
 pub use keyboard::Keyboard;
 pub use listen::listen;
 pub use simulate::simulate;
+pub use crate::linux::listen::{listen, unhook};

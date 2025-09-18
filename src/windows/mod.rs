@@ -15,3 +15,4 @@ pub use crate::windows::grab::grab;
 pub use crate::windows::keyboard::Keyboard;
 pub use crate::windows::listen::listen;
 pub use crate::windows::simulate::simulate;
+pub use crate::windows::listen::unhook;

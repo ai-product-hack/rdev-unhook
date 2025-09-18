@@ -228,21 +228,21 @@ mod macos;
 #[cfg(target_os = "macos")]
 pub use crate::macos::{Keyboard, set_is_main_thread};
 #[cfg(target_os = "macos")]
-use crate::macos::{display_size as _display_size, listen as _listen, simulate as _simulate};
+use crate::macos::{display_size as _display_size, listen as _listen, simulate as _simulate, unhook as _unhook};
 
 #[cfg(all(target_family = "unix", not(target_os = "macos")))]
 mod linux;
 #[cfg(all(target_family = "unix", not(target_os = "macos")))]
 pub use crate::linux::Keyboard;
 #[cfg(all(target_family = "unix", not(target_os = "macos")))]
-use crate::linux::{display_size as _display_size, listen as _listen, simulate as _simulate};
+use crate::linux::{display_size as _display_size, listen as _listen, simulate as _simulate, unhook as _unhook};
 
 #[cfg(target_os = "windows")]
 mod windows;
 #[cfg(target_os = "windows")]
 pub use crate::windows::Keyboard;
 #[cfg(target_os = "windows")]
-use crate::windows::{display_size as _display_size, listen as _listen, simulate as _simulate};
+use crate::windows::{display_size as _display_size, listen as _listen, simulate as _simulate, unhook as _unhook};
 
 /// Listening to global events. Caveat: On MacOS, you require the listen
 /// loop needs to be the primary app (no fork before) and need to have accessibility
@@ -271,6 +271,13 @@ where
 {
     _listen(callback)
 }
+
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+pub fn unhook() -> bool
+{
+    _unhook()
+}
+
 
 /// Sending some events
 ///

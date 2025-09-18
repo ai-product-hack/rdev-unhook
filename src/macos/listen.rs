@@ -2,7 +2,7 @@
 use crate::macos::common::*;
 use crate::rdev::{Event, ListenError};
 use core::ptr::NonNull;
-use objc2_core_foundation::{CFMachPort, CFRunLoop, kCFRunLoopCommonModes};
+use objc2_core_foundation::{CFMachPort, CFRunLoop, kCFRunLoopCommonModes, kCFRunLoopDefaultMode};
 use objc2_core_graphics::{
     CGEvent, CGEventTapCallBack, CGEventTapLocation, CGEventTapOptions, CGEventTapPlacement,
     CGEventTapProxy, CGEventType, kCGEventMaskForAllEvents,
@@ -10,8 +10,10 @@ use objc2_core_graphics::{
 use objc2_foundation::NSAutoreleasePool;
 use std::ffi::c_void;
 use std::ptr::null_mut;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 static mut GLOBAL_CALLBACK: Option<Box<dyn FnMut(Event)>> = None;
+static STOP_LISTENING: AtomicBool = AtomicBool::new(false);
 
 #[link(name = "Cocoa", kind = "framework")]
 unsafe extern "C" {}
@@ -44,6 +46,8 @@ where
 {
     unsafe {
         GLOBAL_CALLBACK = Some(Box::new(callback));
+        STOP_LISTENING.store(false, Ordering::SeqCst);
+        
         let _pool = NSAutoreleasePool::new();
         let callback: CGEventTapCallBack = Some(raw_callback);
         let tap = CGEvent::tap_create(
@@ -62,7 +66,20 @@ where
         current_loop.add_source(Some(&loop_), kCFRunLoopCommonModes);
 
         CGEvent::tap_enable(&tap, true);
-        CFRunLoop::run();
+        
+        // Run the loop while not stopped
+        while !STOP_LISTENING.load(Ordering::SeqCst) {
+            CFRunLoop::run_in_mode(kCFRunLoopDefaultMode, 0.1, true);
+        }
+        
+        // Clean up
+        CFRunLoop::stop(&current_loop);
+        STOP_LISTENING.store(false, Ordering::SeqCst);
     }
     Ok(())
+}
+
+pub fn unhook() -> bool {
+    STOP_LISTENING.store(true, Ordering::SeqCst);
+    true
 }
